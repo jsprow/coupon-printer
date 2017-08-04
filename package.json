@@ -10,7 +10,7 @@
   },
   "build": {
     "appId": "coupon-printer.id",
-    "mac" : {
+    "mac": {
       "category": "utilities"
     }
   },
@@ -29,5 +29,6 @@
     "electron-builder": "^19.18.1"
   },
   "dependencies": {
+    "eslint": "^4.3.0"
   }
 }

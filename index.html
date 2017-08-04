@@ -1,19 +1,83 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Hello World!</title>
-  </head>
-  <body>
-    <h1>Hello World!</h1>
-    <!-- All of the Node.js APIs are available in this renderer process. -->
-    We are using Node.js <script>document.write(process.versions.node)</script>,
-    Chromium <script>document.write(process.versions.chrome)</script>,
-    and Electron <script>document.write(process.versions.electron)</script>.
-  </body>
 
-  <script>
-    // You can also require other files to run in this process
-    require('./renderer.js')
-  </script>
+<head>
+  <meta charset="UTF-8">
+  <title>iVision Coupon Printer</title>
+  <style>
+    @media print {
+      .no-print {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body id="body">
+  <h3 class="no-print">Coupon Text Below</h3>
+  <p id="couponBox">Waiting for coupon...</p>
+  <button id="printButton" class="no-print">Print</button>
+</body>
+
+<script>
+  require('./renderer.js')
+
+  const { ipcRenderer, remote } = require('electron'),
+    printButton = document.getElementById('printButton'),
+    couponBox = document.getElementById('couponBox'),
+    http = require('http'),
+    kiosk = '{F88575A4-7484-401B-9890-D69E004925DF}',
+    user = '{D4B04CA7-E7B6-4E56-B9EF-1BA589D2EF55}'
+
+  let lastPrint = ''
+
+  setInterval(() => {
+    http.get('http://www.repleotech.com/gateway/kiosk_last_checkin.asp?kiosk=' +
+      kiosk +
+      '&user_guid=' +
+      user,
+      res => {
+        let statusCode = res.statusCode, contentType = res.headers['content-type'], error, rawData = ''
+
+        if (statusCode !== 200) {
+          error = new Error('Request Failed.\n' + 'Status Code: ' + statusCode)
+        }
+
+        if (error) {
+          console.log(error.message)
+          res.resume()
+          return
+        }
+
+        res.setEncoding('utf8')
+
+        res.on('data', chunk => {
+          return (rawData += chunk)
+        })
+
+        res.on('end', () => {
+          try {
+            var parsedData = JSON.parse(rawData)
+            couponBox.innerText = parsedData.mobile
+
+            if (parsedData.mobile !== lastPrint) {
+              lastPrint = parsedData.mobile
+              console.log(`new print: ${lastPrint}`)
+            } else {
+              console.log(`old print: ${lastPrint}`)
+            }
+
+          } catch (e) {
+            console.log(e.message)
+          }
+        })
+      })
+  }, 5000)
+
+  printButton.addEventListener('click', function () {
+    ipcRenderer.send('print')
+  })
+
+</script>
+
 </html>
